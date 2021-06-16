@@ -21,7 +21,7 @@ async function explain(term: string) {
     Deno.exit();
   }
 
-  if (!extract.includes("may refer to:")) {
+  if (!extract.includes("may refer to")) {
     console.log(extract);
     Deno.exit();
   }
