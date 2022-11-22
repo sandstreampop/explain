@@ -1,15 +1,57 @@
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.12-alpha/deno-dom-wasm.ts";
+import { readLines } from "https://deno.land/std@0.98.0/io/mod.ts";
+
+interface WikiFetchResult {
+  extract?: string;
+}
+
 const _permission = await Deno.permissions.request({ name: "net" });
 
-const term = Deno.args.join(" ");
+async function explain(term: string) {
+  const url = encodeURI(
+    `https://en.wikipedia.org/api/rest_v1/page/summary/${term}?redirect=true`
+  );
+  const fetchResult = await fetch(url);
+  const json: WikiFetchResult = await fetchResult.json();
 
-const fetchUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${term}?redirect=true`;
+  const { extract } = json;
 
-const result = await fetch(fetchUrl);
+  if (extract === undefined) {
+    console.log(`Could not fetch wiki for your input: ${term}`);
+    Deno.exit();
+  }
 
-const json = await result.json();
+  if (!extract.includes("may refer to")) {
+    console.log(extract);
+    Deno.exit();
+  }
 
-if (json.extract) {
-  console.log(json.extract);
-} else {
-  console.log(`Could not fetch wiki for your input: ${term}`);
+  handleDisambiguation(term);
 }
+
+async function handleDisambiguation(term: string) {
+  const htmlUrl = encodeURI(
+    `https://en.wikipedia.org/api/rest_v1/page/html/${term}?redirect=true&stash=false`
+  );
+  const htmlResult = await fetch(htmlUrl);
+  const htmlString = await htmlResult.text();
+  
+  const parsedHtml = new DOMParser().parseFromString(htmlString, "text/html");
+  const disambiguationList = parsedHtml
+    ?.getElementsByTagName("a")
+    .filter((el) => el.getAttribute("rel") === "mw:WikiLink")
+    .map((el) => el.textContent);
+  
+  console.table(disambiguationList);
+  console.log(
+    "There is more than one match. Please input the index of the term you meant:"
+  );
+  
+  const data = await readLines(Deno.stdin).next();
+  
+  console.log(disambiguationList![data.value]);
+  explain(disambiguationList![data.value]);
+}
+
+const termFromArgs = Deno.args.join(" ");
+explain(termFromArgs);
