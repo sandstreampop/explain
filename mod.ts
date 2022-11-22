@@ -1,11 +1,12 @@
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.36-alpha/deno-dom-wasm.ts";
 import { readLines } from "https://deno.land/std@0.165.0/io/mod.ts";
+import wrap from "https://deno.land/x/word_wrap@v0.1.1/mod.ts";
 
 interface WikiFetchResult {
   extract?: string;
 }
 
-const _permission = await Deno.permissions.request({ name: "net" });
+await Deno.permissions.request({ name: "net" });
 
 async function explain(term: string) {
   const url = encodeURI(
@@ -21,12 +22,14 @@ async function explain(term: string) {
     Deno.exit();
   }
 
-  if (!extract.includes("may refer to")) {
-    console.log(extract);
-    Deno.exit();
+  const isDisambiguation = extract.includes("may refer to");
+  if (isDisambiguation) {
+    handleDisambiguation(term);
   }
 
-  handleDisambiguation(term);
+  const formattedExtract = wrap(extract, { indent: " ", width: 80 });
+  console.log(formattedExtract);
+  Deno.exit();
 }
 
 async function handleDisambiguation(term: string) {
