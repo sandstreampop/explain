@@ -26,13 +26,14 @@ async function explain(term: string) {
   }
 
   const isDisambiguation = extract.includes("may refer to");
+
   if (isDisambiguation) {
     handleDisambiguation(term);
+  } else {
+    const formattedExtract = wrap(extract, { indent: " ", width: 80 });
+    console.log(formattedExtract);
+    Deno.exit();
   }
-
-  const formattedExtract = wrap(extract, { indent: " ", width: 80 });
-  console.log(formattedExtract);
-  Deno.exit();
 }
 
 async function handleDisambiguation(term: string) {
