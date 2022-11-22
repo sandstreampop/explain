@@ -19,6 +19,9 @@ async function explain(term: string) {
 
   if (extract === undefined) {
     console.log(`Could not fetch wiki for your input: ${term}`);
+    console.log(
+      `explain is documented at https://github.com/sandstreampop/explain`,
+    );
     Deno.exit();
   }
 
